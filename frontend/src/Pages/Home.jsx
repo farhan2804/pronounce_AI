@@ -1,4 +1,4 @@
-import UploadAudio from "../components/UploadAudio";
+import UploadAudio from "../Components/UploadAudio";
 
 function Home() {
   return <UploadAudio />;
