@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const API = axios.create({
-    baseURL: "http://localhost:8080/api",
+  baseURL: "https://pronounceai-production-fe5d.up.railway.app/api",
 });
-
 export default API;
