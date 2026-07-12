@@ -1,17 +1,48 @@
 import { useState } from "react";
 import API from "../services/api";
 
+
 function UploadAudio() {
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
   const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]);
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+
+    audio.onloadedmetadata = () => {
+
+      window.URL.revokeObjectURL(audio.src);
+
+      const duration = audio.duration;
+
+      if (duration < 30 || duration > 45) {
+        setError("Audio must be between 30 and 45 seconds.");
+        setSelectedFile(null);
+        setResult(null);
+        return;
+      }
+
+      setError("");
+      setSelectedFile(file);
+
+    };
+
+    audio.src = URL.createObjectURL(file);
+
   };
 
   const handleUpload = async () => {
+
     if (!selectedFile) {
-      alert("Please select an audio file.");
+      alert("Please select a valid audio file.");
       return;
     }
 
@@ -19,83 +50,128 @@ function UploadAudio() {
     formData.append("audio", selectedFile);
 
     try {
+
       const response = await API.post("/audio/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log(response.data);
+      setResult(response.data);
 
-      setResult({
-        score: 86,
-        accuracy: 90,
-        fluency: 82,
-        completeness: 88,
-        mistakes: [
-          {
-            word: "comfortable",
-            issue: "Stress incorrect",
-          },
-          {
-            word: "development",
-            issue: "Unclear pronunciation",
-          },
-        ],
-      });
     } catch (error) {
       console.error(error);
       alert("Upload Failed");
     }
+
   };
 
   return (
-    <div>
-      <input type="file" accept=".mp3,.wav,.m4a" onChange={handleFileChange} />
 
-      <br />
-      <br />
+    <div className="container">
+
+      <h1 className="title">🎤 PronounceAI</h1>
+
+      <p className="subtitle">
+        AI Powered English Pronunciation Assessment
+      </p>
+
+      <input
+        className="fileInput"
+        type="file"
+        accept=".mp3,.wav,.m4a"
+        onChange={handleFileChange}
+      />
+
+      <br /><br />
+
+      {error && (
+        <p className="error">{error}</p>
+      )}
 
       {selectedFile && (
         <p>
-          Selected File: <b>{selectedFile.name}</b>
+          <b>Selected File :</b> {selectedFile.name}
         </p>
       )}
 
-      <button onClick={handleUpload}>Analyze Pronunciation</button>
-
-      <br />
-      <br />
+      <button
+        className="btn"
+        onClick={handleUpload}
+      >
+        Analyze Pronunciation
+      </button>
 
       {result && (
-        <div>
-          <h2>Pronunciation Score : {result.score}/100</h2>
 
-          <p>
-            <b>Accuracy:</b> {result.accuracy}%
-          </p>
+        <div className="card">
 
-          <p>
-            <b>Fluency:</b> {result.fluency}%
-          </p>
+          <h2 style={{ textAlign: "center" }}>
+            Pronunciation Report
+          </h2>
 
-          <p>
-            <b>Completeness:</b> {result.completeness}%
-          </p>
+          <div className="grid">
 
-          <h3>Mistakes</h3>
+            <div className="scoreBox">
+              <div className="scoreNumber">
+                {result.score}
+              </div>
+              <div>Score</div>
+            </div>
+
+            <div className="scoreBox">
+              <div className="scoreNumber">
+                {result.accuracy}%
+              </div>
+              <div>Accuracy</div>
+            </div>
+
+            <div className="scoreBox">
+              <div className="scoreNumber">
+                {result.fluency}%
+              </div>
+              <div>Fluency</div>
+            </div>
+
+            <div className="scoreBox">
+              <div className="scoreNumber">
+                {result.completeness}%
+              </div>
+              <div>Completeness</div>
+            </div>
+
+          </div>
+
+          <h3 style={{ marginTop: "30px" }}>
+            Pronunciation Issues
+          </h3>
 
           <ul>
+
             {result.mistakes.map((mistake, index) => (
+
               <li key={index}>
-                <b>{mistake.word}</b> - {mistake.issue}
+
+                ❌ <b>{mistake.word}</b>
+
+                <br />
+
+                {mistake.issue}
+
               </li>
+
             ))}
+
           </ul>
+
         </div>
+
       )}
+
     </div>
+
   );
+
 }
 
 export default UploadAudio;
