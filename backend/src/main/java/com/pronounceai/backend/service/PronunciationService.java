@@ -21,41 +21,37 @@ public class PronunciationService {
 
     public PronunciationResponse analyzePronunciation(MultipartFile file) {
 
-        try {
+    try {
 
-            // Save uploaded file temporarily
-            File tempFile = File.createTempFile("audio-", ".wav");
-            file.transferTo(tempFile);
+        System.out.println("===== STEP 1: analyzePronunciation() called =====");
 
-            // Call Azure Speech
-            SpeechRecognitionResult result =
-                    azureSpeechService.recognizeSpeech(tempFile.getAbsolutePath());
+        File tempFile = File.createTempFile("audio-", ".wav");
+        file.transferTo(tempFile);
 
-            System.out.println("Recognized Text: " + result.getText());
+        System.out.println("===== STEP 2: File saved =====");
 
-            // Delete temporary file
-            tempFile.delete();
+        SpeechRecognitionResult result =
+                azureSpeechService.recognizeSpeech(tempFile.getAbsolutePath());
 
-            // Temporary response (we'll replace this with real Azure scores next)
-            return new PronunciationResponse(
-                    86,
-                    90,
-                    82,
-                    88,
-                    Arrays.asList(
-                            new WordMistake(
-                                    "comfortable",
-                                    "Stress incorrect"
-                            ),
-                            new WordMistake(
-                                    "development",
-                                    "Unclear pronunciation"
-                            )
-                    )
-            );
+        System.out.println("===== STEP 3: Azure call completed =====");
+        System.out.println("Recognized Text: " + result.getText());
 
-        } catch (Exception e) {
-            throw new RuntimeException("Speech analysis failed", e);
-        }
+        tempFile.delete();
+
+        return new PronunciationResponse(
+                86,
+                90,
+                82,
+                88,
+                Arrays.asList(
+                        new WordMistake("comfortable", "Stress incorrect"),
+                        new WordMistake("development", "Unclear pronunciation")
+                )
+        );
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException("Speech analysis failed", e);
     }
+}
 }
