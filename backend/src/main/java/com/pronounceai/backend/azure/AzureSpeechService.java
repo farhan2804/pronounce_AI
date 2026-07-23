@@ -1,7 +1,5 @@
 package com.pronounceai.backend.azure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.microsoft.cognitiveservices.speech.*;
 import com.microsoft.cognitiveservices.speech.audio.AudioConfig;
 import org.springframework.stereotype.Service;
@@ -37,28 +35,6 @@ public class AzureSpeechService {
 
         SpeechRecognitionResult result =
                 recognizer.recognizeOnceAsync().get();
-
-        String jsonResult = result.getProperties().getProperty(
-                PropertyId.SpeechServiceResponse_JsonResult);
-
-        System.out.println("========== AZURE JSON ==========");
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-
-            Object jsonObject = mapper.readValue(jsonResult, Object.class);
-
-            String prettyJson = mapper
-                    .enable(SerializationFeature.INDENT_OUTPUT)
-                    .writeValueAsString(jsonObject);
-
-            System.out.println(prettyJson);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("================================");
 
         recognizer.close();
         audioConfig.close();

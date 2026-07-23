@@ -1,5 +1,8 @@
 package com.pronounceai.backend.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.cognitiveservices.speech.PropertyId;
 import com.microsoft.cognitiveservices.speech.SpeechRecognitionResult;
 import com.pronounceai.backend.azure.AzureSpeechService;
 import com.pronounceai.backend.dto.PronunciationResponse;
@@ -8,7 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class PronunciationService {
@@ -21,37 +25,75 @@ public class PronunciationService {
 
     public PronunciationResponse analyzePronunciation(MultipartFile file) {
 
-    try {
+        try {
 
-        System.out.println("===== STEP 1: analyzePronunciation() called =====");
+            File tempFile = File.createTempFile("audio-", ".wav");
+            file.transferTo(tempFile);
 
-        File tempFile = File.createTempFile("audio-", ".wav");
-        file.transferTo(tempFile);
+            SpeechRecognitionResult result =
+                    azureSpeechService.recognizeSpeech(tempFile.getAbsolutePath());
 
-        System.out.println("===== STEP 2: File saved =====");
+            String json = result.getProperties()
+                    .getProperty(PropertyId.SpeechServiceResponse_JsonResult);
 
-        SpeechRecognitionResult result =
-                azureSpeechService.recognizeSpeech(tempFile.getAbsolutePath());
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
 
-        System.out.println("===== STEP 3: Azure call completed =====");
-        System.out.println("Recognized Text: " + result.getText());
+            JsonNode pronunciation =
+                    root.path("NBest")
+                            .get(0)
+                            .path("PronunciationAssessment");
 
-        tempFile.delete();
+            int score = (int) Math.round(
+                    pronunciation.path("PronScore").asDouble());
 
-        return new PronunciationResponse(
-                86,
-                90,
-                82,
-                88,
-                Arrays.asList(
-                        new WordMistake("comfortable", "Stress incorrect"),
-                        new WordMistake("development", "Unclear pronunciation")
-                )
-        );
+            int accuracy = (int) Math.round(
+                    pronunciation.path("AccuracyScore").asDouble());
 
-    } catch (Exception e) {
-        e.printStackTrace();
-        throw new RuntimeException("Speech analysis failed", e);
+            int fluency = (int) Math.round(
+                    pronunciation.path("FluencyScore").asDouble());
+
+            int completeness = (int) Math.round(
+                    pronunciation.path("CompletenessScore").asDouble());
+
+            List<WordMistake> mistakes = new ArrayList<>();
+
+            JsonNode words = root.path("NBest")
+                    .get(0)
+                    .path("Words");
+
+            for (JsonNode word : words) {
+
+                String wordText = word.path("Word").asText();
+
+                double wordAccuracy = word
+                        .path("PronunciationAssessment")
+                        .path("AccuracyScore")
+                        .asDouble();
+
+                if (wordAccuracy < 85) {
+
+                    mistakes.add(
+                            new WordMistake(
+                                    wordText,
+                                    "Low pronunciation accuracy (" + Math.round(wordAccuracy) + "%)"
+                            )
+                    );
+                }
+            }
+
+            tempFile.delete();
+
+            return new PronunciationResponse(
+                    score,
+                    accuracy,
+                    fluency,
+                    completeness,
+                    mistakes
+            );
+
+        } catch (Exception e) {
+            throw new RuntimeException("Speech analysis failed", e);
+        }
     }
-}
 }
