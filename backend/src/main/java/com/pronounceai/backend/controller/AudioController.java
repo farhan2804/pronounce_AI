@@ -20,19 +20,16 @@ public class AudioController {
     public ResponseEntity<?> uploadAudio(
             @RequestParam("audio") MultipartFile file) {
 
-        // Check if file exists
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("No file uploaded.");
         }
 
-        // Check maximum file size (20 MB)
         if (file.getSize() > 20 * 1024 * 1024) {
             return ResponseEntity.badRequest().body("File size exceeds 20 MB.");
         }
 
-        // Mock pronunciation analysis
         PronunciationResponse response =
-                pronunciationService.analyzePronunciation(file.getOriginalFilename());
+                pronunciationService.analyzePronunciation(file);
 
         return ResponseEntity.ok(response);
     }
