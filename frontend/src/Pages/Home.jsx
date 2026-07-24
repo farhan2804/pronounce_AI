@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import UploadAudio from "../Components/UploadAudio";
+import AudioRecorder from "../Components/AudioRecorder";
 import API from "../Services/api";
 
 function Home() {
   const [sentence, setSentence] = useState("");
+
+  // Shared recording state
+  const [recordedBlob, setRecordedBlob] = useState(null);
 
   useEffect(() => {
     API.get("/sentence")
@@ -21,12 +25,20 @@ function Home() {
 
       <div className="sentence-card">
         <h2>Read the sentence below</h2>
+
         <p className="sentence-text">
           {sentence || "Loading sentence..."}
         </p>
       </div>
 
-      <UploadAudio />
+      <AudioRecorder
+        recordedBlob={recordedBlob}
+        setRecordedBlob={setRecordedBlob}
+      />
+
+      <UploadAudio
+        recordedBlob={recordedBlob}
+      />
     </div>
   );
 }
