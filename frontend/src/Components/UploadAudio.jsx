@@ -1,10 +1,13 @@
 import { useState } from "react";
 import API from "../Services/api";
+import ScoreCard from "./ScoreCard";
+import MistakeList from './MistakeList';
 
 function UploadAudio({ recordedBlob }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -36,27 +39,24 @@ function UploadAudio({ recordedBlob }) {
   const handleUpload = async () => {
     let audioFile = null;
 
-    // Priority 1 -> Browser Recording
     if (recordedBlob) {
       audioFile = new File([recordedBlob], "recording.wav", {
         type: "audio/wav",
       });
-    }
-
-    // Priority 2 -> Uploaded File
-    else if (selectedFile) {
+    } else if (selectedFile) {
       audioFile = selectedFile;
     } else {
       alert("Please record or upload an audio file.");
-
       return;
     }
 
     const formData = new FormData();
-
     formData.append("audio", audioFile);
 
     try {
+      setLoading(true);
+      setResult(null);
+
       const response = await API.post("/audio/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -66,14 +66,43 @@ function UploadAudio({ recordedBlob }) {
       setResult(response.data);
     } catch (error) {
       console.error(error);
-
       alert("Upload Failed");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const getAssessment = (score) => {
+    if (score >= 90) {
+      return {
+        title: "Excellent Pronunciation",
+        message: "Your pronunciation is very clear and natural. Excellent job!",
+      };
+    }
+
+    if (score >= 75) {
+      return {
+        title: "Good Pronunciation",
+        message:
+          "Your pronunciation is good. Improving fluency and clarity will make it even better.",
+      };
+    }
+
+    return {
+      title: "Needs Improvement",
+      message:
+        "Continue practicing pronunciation, pacing, and word clarity to improve your speaking skills.",
+    };
+  };
+
+  const assessment = result ? getAssessment(result.score) : null;
+
   return (
-    <div className="container">
-      <h2>📂 Upload Existing Audio (Optional)</h2>
+    <div>
+      <p className="section-description">
+        Upload an existing audio file or analyze the recording you created
+        above.
+      </p>
 
       <input
         className="fileInput"
@@ -82,64 +111,73 @@ function UploadAudio({ recordedBlob }) {
         onChange={handleFileChange}
       />
 
-      <br />
-      <br />
-
       {error && <p className="error">{error}</p>}
 
       {selectedFile && (
-        <p>
-          <b>Selected File :</b> {selectedFile.name}
+        <p className="success-status">
+          📁 Selected File: <strong>{selectedFile.name}</strong>
         </p>
       )}
 
       {recordedBlob && (
-        <p style={{ color: "green" }}>
+        <p className="success-status">
           ✅ Browser recording ready for analysis
         </p>
       )}
 
-      <button className="btn" onClick={handleUpload}>
-        Analyze Pronunciation
+      <button className="btn" disabled={loading} onClick={handleUpload}>
+        {loading ? "Analyzing Pronunciation..." : "Analyze Pronunciation"}
       </button>
 
+      {loading && (
+        <div className="loading">
+          <div className="spinner"></div>
+
+          <p>Azure AI is analyzing your pronunciation...</p>
+        </div>
+      )}
+
       {result && (
-        <div className="card">
-          <h2 style={{ textAlign: "center" }}>Pronunciation Report</h2>
+        <div className="card fade-in">
+          <div className="result-title">
+            <h2>Pronunciation Report</h2>
 
-          <div className="grid">
-            <div className="scoreBox">
-              <div className="scoreNumber">{result.score}</div>
-              <div>Score</div>
-            </div>
-
-            <div className="scoreBox">
-              <div className="scoreNumber">{result.accuracy}%</div>
-              <div>Accuracy</div>
-            </div>
-
-            <div className="scoreBox">
-              <div className="scoreNumber">{result.fluency}%</div>
-              <div>Fluency</div>
-            </div>
-
-            <div className="scoreBox">
-              <div className="scoreNumber">{result.completeness}%</div>
-              <div>Completeness</div>
-            </div>
+            <span className="badge">Azure Speech AI</span>
           </div>
 
-          <h3 style={{ marginTop: "30px" }}>Pronunciation Issues</h3>
+          <div className="grid">
+            <ScoreCard title="Overall Score" value={result.score} />
 
-          <ul>
-            {result.mistakes.map((mistake, index) => (
-              <li key={index}>
-                ❌ <b>{mistake.word}</b>
-                <br />
-                {mistake.issue}
-              </li>
-            ))}
-          </ul>
+            <ScoreCard title="Accuracy" value={result.accuracy} />
+
+            <ScoreCard title="Fluency" value={result.fluency} />
+
+            <ScoreCard title="Completeness" value={result.completeness} />
+          </div>
+
+          <div className="success-card" style={{ marginTop: "30px" }}>
+            <h3
+              style={{
+                color: "#166534",
+                marginBottom: "12px",
+              }}
+            >
+              Overall Assessment
+            </h3>
+
+            <strong>{assessment.title}</strong>
+
+            <p
+              style={{
+                marginTop: "10px",
+                color: "#166534",
+              }}
+            >
+              {assessment.message}
+            </p>
+          </div>
+
+          <MistakeList mistakes={result.mistakes} />
         </div>
       )}
     </div>

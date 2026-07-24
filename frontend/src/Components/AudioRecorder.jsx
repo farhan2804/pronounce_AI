@@ -16,7 +16,6 @@ function AudioRecorder({ setRecordedBlob }) {
       });
 
       streamRef.current = stream;
-
       chunksRef.current = [];
 
       const recorder = new MediaRecorder(stream, {
@@ -48,7 +47,6 @@ function AudioRecorder({ setRecordedBlob }) {
       };
 
       recorder.start();
-
       setIsRecording(true);
     } catch (err) {
       console.error(err);
@@ -70,33 +68,64 @@ function AudioRecorder({ setRecordedBlob }) {
   };
 
   return (
-    <div style={{ marginTop: "30px" }}>
-      <h2>🎙 Record Your Voice</h2>
+    <div className="recorder-container">
 
-      <button onClick={startRecording} disabled={isRecording}>
-        {isRecording ? "Recording..." : "🎙 Start Recording"}
-      </button>
+      <p className="section-description">
+        Click <strong>Start Recording</strong>, read the passage naturally,
+        then stop the recording before analyzing your pronunciation.
+      </p>
 
-      <button
-        onClick={stopRecording}
-        disabled={!isRecording}
-        style={{ marginLeft: "10px" }}
-      >
-        ⏹ Stop Recording
-      </button>
+      <div className="record-buttons">
+
+        <button
+          onClick={startRecording}
+          disabled={isRecording}
+        >
+          🎙 Start Recording
+        </button>
+
+        <button
+          onClick={stopRecording}
+          disabled={!isRecording}
+        >
+          ⏹ Stop Recording
+        </button>
+
+      </div>
+
+      <div className="record-status">
+
+        {isRecording ? (
+          <span className="recording-status">
+            🔴 Recording in progress...
+          </span>
+        ) : (
+          audioURL && (
+            <span className="success-status">
+              ✅ Recording completed successfully
+            </span>
+          )
+        )}
+
+      </div>
 
       {audioURL && (
-        <>
-          <h3 style={{ marginTop: "20px" }}>Recorded Audio</h3>
+        <div className="audio-preview">
+
+          <h3>🎵 Recorded Audio</h3>
 
           <audio controls src={audioURL}></audio>
 
-          <br />
-          <br />
+          <button
+            className="secondary-btn"
+            onClick={recordAgain}
+          >
+            🔄 Record Again
+          </button>
 
-          <button onClick={recordAgain}>🔄 Record Again</button>
-        </>
+        </div>
       )}
+
     </div>
   );
 }

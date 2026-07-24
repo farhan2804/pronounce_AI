@@ -46,6 +46,11 @@ public class PronunciationService {
                         String json = result.getProperties()
                                         .getProperty(PropertyId.SpeechServiceResponse_JsonResult);
 
+                        // // Print Azure's complete JSON response
+                        // System.out.println("========== AZURE JSON ==========");
+                        // System.out.println(json);
+                        // System.out.println("================================");
+
                         ObjectMapper mapper = new ObjectMapper();
                         JsonNode root = mapper.readTree(json);
 
