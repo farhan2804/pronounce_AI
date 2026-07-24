@@ -15,17 +15,20 @@ public class AzureSpeechService {
         this.speechConfig = speechConfig;
     }
 
-    public SpeechRecognitionResult recognizeSpeech(String audioFilePath)
+    public SpeechRecognitionResult recognizeSpeech(
+            String audioFilePath,
+            String referenceSentence)
             throws ExecutionException, InterruptedException {
 
-        AudioConfig audioConfig = AudioConfig.fromWavFileInput(audioFilePath);
+        AudioConfig audioConfig =
+                AudioConfig.fromWavFileInput(audioFilePath);
 
         SpeechRecognizer recognizer =
                 new SpeechRecognizer(speechConfig, audioConfig);
 
         PronunciationAssessmentConfig pronunciationConfig =
                 new PronunciationAssessmentConfig(
-                        "",
+                        referenceSentence,
                         PronunciationAssessmentGradingSystem.HundredMark,
                         PronunciationAssessmentGranularity.Phoneme,
                         true
@@ -42,4 +45,5 @@ public class AzureSpeechService {
 
         return result;
     }
+
 }
